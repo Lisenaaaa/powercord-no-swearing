@@ -21,25 +21,13 @@ module.exports = class RemoveSwearWords extends Plugin {
 				message[1].content = message[1].content.replaceAll(regex, "🤬");
 			}
 
-			if (swearsRemoved == 1) {
-				setTimeout(
-					() =>
-						this.sendEphemeralMessage(
-							`Please don't swear you ${latestSwear}`
-						),
-					100
-				);
-			}
-
-			if (swearsRemoved > 1) {
-				setTimeout(
-					() =>
-						this.sendEphemeralMessage(
-							`Hey! Don't swear! I just had to remove ${swearsRemoved} bad words from that message, before I could send it.`
-						),
-					100
-				);
-			}
+			setTimeout(
+				() =>
+					this.sendEphemeralMessage(
+						`Hey! Don't swear! I just had to remove ${swearsRemoved} bad word${swearsRemoved === 1 ? '' : 's'} from that message, before I could send it.`
+					),
+				100
+			);
 		});
 	}
 
