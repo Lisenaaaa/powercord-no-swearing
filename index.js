@@ -1,27 +1,43 @@
 const { Plugin } = require("powercord/entities");
 const { inject, uninject } = require("powercord/injector");
 const { messages } = require("powercord/webpack");
-const words = require("./words").words;
+const wordList = require("./words").words;
 
 module.exports = class RemoveSwearWords extends Plugin {
 	async startPlugin() {
 		inject("removeSwearWords", messages, "sendMessage", (message) => {
-			const swearWords = words;
+			const swearWords = wordList;
 
 			let swearsRemoved = 0;
+			let latestSwear = "";
 
 			for (const word of swearWords) {
 				const regex = new RegExp(word, "gim");
 				if (regex.test(message[1].content)) {
 					swearsRemoved += message[1].content.match(regex).length;
+					latestSwear = word;
 				}
 
 				message[1].content = message[1].content.replaceAll(regex, "🤬");
 			}
 
-			if (swearsRemoved >= 1) {
-				this.sendEphemeralMessage(
-					`Hey! Don't swear! I just had to remove ${swearsRemoved} bad words from that message, before I could send it.`
+			if (swearsRemoved == 1) {
+				setTimeout(
+					() =>
+						this.sendEphemeralMessage(
+							`Please don't swear you ${latestSwear}`
+						),
+					100
+				);
+			}
+
+			if (swearsRemoved > 1) {
+				setTimeout(
+					() =>
+						this.sendEphemeralMessage(
+							`Hey! Don't swear! I just had to remove ${swearsRemoved} bad words from that message, before I could send it.`
+						),
+					100
 				);
 			}
 		});
