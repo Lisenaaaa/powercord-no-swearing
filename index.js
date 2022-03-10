@@ -13,7 +13,12 @@ module.exports = class RemoveSwearWords extends Plugin {
       let swearsRemoved = 0;
 
       for (const word of swearWords) {
-        const regex = new RegExp(word, 'gim');
+        const regex = new RegExp(word, 'gmi');
+        // for (const r of message[1].content.matchAll(regex)) {
+        //   if (r) {
+        //     console.log(r);
+        //   }
+        // }
         if (regex.test(message[1].content)) {
           swearsRemoved += message[1].content.match(regex).length;
         }
