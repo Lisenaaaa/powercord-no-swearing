@@ -2,43 +2,63 @@
 /* eslint-disable no-tabs */
 const { Plugin } = require('powercord/entities');
 const { inject, uninject } = require('powercord/injector');
-const { messages } = require('powercord/webpack');
+const { channels, messages } = require('powercord/webpack');
 const wordList = require('./words').words;
+const Settings = require('./components/settings');
 
 module.exports = class RemoveSwearWords extends Plugin {
   async startPlugin () {
+    powercord.api.settings.registerSettings(this.entityID, {
+      category: this.entityID,
+      label: 'No Swearing',
+      render: Settings
+    });
+
+    powercord.api.commands.registerCommand({
+      command: 'currentChannelId',
+      description: 'Returns the current channel\'s ID. Useful in DMs.',
+      usage: '{c}',
+      executor: () => ({
+        send: false,
+        result: `The current channel ID is **\`${channels.getChannelId()}\`**`
+      })
+    });
+
     inject('removeSwearWords', messages, 'sendMessage', (message) => {
-      const swearWords = wordList;
+      const whitelistedChannels = this.settings.get('whitelistedChannels').split(',');
+      const currentChannel = channels.getChannelId();
 
-      let swearsRemoved = 0;
+      if (!whitelistedChannels.includes(currentChannel)) {
+        const swearWords = wordList;
 
-      for (const word of swearWords) {
-        const regex = new RegExp(word, 'gmi');
-        // for (const r of message[1].content.matchAll(regex)) {
-        //   if (r) {
-        //     console.log(r);
-        //   }
-        // }
-        if (regex.test(message[1].content)) {
-          swearsRemoved += message[1].content.match(regex).length;
+        let swearsRemoved = 0;
+
+        for (const word of swearWords) {
+          const regex = new RegExp(word, 'gmi');
+
+          if (regex.test(message[1].content)) {
+            swearsRemoved += message[1].content.match(regex).length;
+          }
+
+          message[1].content = message[1].content.replaceAll(regex, '🤬');
         }
 
-        message[1].content = message[1].content.replaceAll(regex, '🤬');
-      }
-
-      if (swearsRemoved > 0) {
-        setTimeout(
-          () =>
-            this.sendEphemeralMessage(
-              `Hey! Don't swear! I just had to remove ${swearsRemoved} bad word${swearsRemoved === 1 ? '' : 's'} from that message, before I could send it.`
-            ),
-          100
-        );
+        if (swearsRemoved > 0) {
+          setTimeout(
+            () =>
+              this.sendEphemeralMessage(
+                `Hey! Don't swear! I just had to remove ${swearsRemoved} bad word${swearsRemoved === 1 ? '' : 's'} from that message, before I could send it.`
+              ),
+            100
+          );
+        }
       }
     });
   }
 
   pluginWillUnload () {
+    powercord.api.settings.unregisterSettings(this.entityID);
+    powercord.api.commands.unregisterCommand('currentChannelId');
     uninject('removeSwearWords');
   }
 
@@ -50,10 +70,10 @@ module.exports = class RemoveSwearWords extends Plugin {
       {},
       (r) => {
         module =
-					module ||
-					Object.values(r.c).find(
-					  (m) => m?.exports?.default && m.exports.default[name]
-					);
+        module ||
+        Object.values(r.c).find(
+          (m) => m?.exports?.default && m.exports.default[name]
+        );
       }
     ]);
     return module;
